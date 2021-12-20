@@ -9,15 +9,24 @@ function api.class()
     }
 
     class_type.ctor = nil -- 构造函数
-
-    class_type.new = function()
-        local o = {}
+    class_type.new = function(class)
+        local o = {
+            z = 3
+        }
+        o.TYPE = class_type
         if class_type.ctor then
             class_type:ctor()
         end
         -- 当o没有找到对应的键值时，会让class_type找，如果class_type也没找到时，会让class_type的元表来找；
         -- 后面就能看到class_type的元表就是它的父类们的键值的集合；
-        setmetatable(o, class_type) 
+        setmetatable(o, {
+            __index = class,
+            __newindex = function(o, k, v) -- 只有当o自己没有k键的话，才会调用__newindex方法；
+                print("o __newindex")
+                rawset(o, k, v)
+                -- o[k] = v
+            end
+        }) 
         return o
     end
 
@@ -37,13 +46,9 @@ function api.class()
     -- setmetatable(class_type, metatable1)
     -- setmetatable(class_type, metatable2)
 
-
-
-
     -- 正确的做法：直接写好一个完整的
     local vtbl = {}
     _class[class_type] = vtbl
-
     setmetatable(class_type, {
         __newindex = function(o, k, v)
             print("vtbl __newindex")
@@ -52,32 +57,22 @@ function api.class()
         __index = vtbl
     })
 
-    
-
-
-
-
-
-
-
-
     return class_type
 end
 
--- local O = api.class() -- 这只是一个类，不该去操作
--- function O:ctor()
---     print("O:ctor")
--- end
+local O = api.class() -- 这只是一个类，不该去操作
+function O:ctor()
+    print("O:ctor")
+end
 
--- local o1 = O:new()
--- print(o1.x, o1.y)
-
-
-
-
-
-
-
+local o1 = O:new()
+print(o1.x, o1.y, o1.z)
+-- o1.x = 100
+-- o1.z = 4
+o1.x = 10 -- 第一次会触发__newindex，通过rawset后不会再触发
+print(o1.x, o1.y, o1.z)
+o1.x = 100 -- 不会再触发__newindex
+print(o1.x, o1.y, o1.z)
 
 -- 标的长度测试
 
